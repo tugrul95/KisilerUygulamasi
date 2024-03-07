@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.SearchView.OnQueryTextListener
+import androidx.fragment.app.viewModels
 
 import androidx.navigation.Navigation
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -15,11 +16,16 @@ import com.example.kisileruygulamasi.R
 import com.example.kisileruygulamasi.data.entity.Kisiler
 import com.example.kisileruygulamasi.databinding.FragmentAnasayfaBinding
 import com.example.kisileruygulamasi.ui.adapter.KisilerAdapter
+import com.example.kisileruygulamasi.ui.viewmodel.AnasayfaViewModel
+import com.example.kisileruygulamasi.ui.viewmodel.KisiDetayViewModel
+import com.example.kisileruygulamasi.ui.viewmodel.KisiKayitViewModel
+import com.example.kisileruygulamasi.utils.gecis
+import dagger.hilt.android.AndroidEntryPoint
 
-
+@AndroidEntryPoint
 class AnasayfaFragment : Fragment() {
 
-
+    private lateinit var viewModel: AnasayfaViewModel
     private lateinit var binding: FragmentAnasayfaBinding
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -27,16 +33,11 @@ class AnasayfaFragment : Fragment() {
     ): View? {
         binding = FragmentAnasayfaBinding.inflate(inflater, container, false)
 
-        val kisilerListesi = ArrayList<Kisiler>()
-        val k1 = Kisiler(1, "Ahmet, ","1111")
-        val k2 = Kisiler(2, "Zeynep, ","1111")
-        val k3 = Kisiler(3, "Beyza, ","1111")
-        kisilerListesi.add(k1)
-        kisilerListesi.add(k2)
-        kisilerListesi.add(k3)
+        viewModel.kisilerListesi.observe(viewLifecycleOwner) {
+            val kisilerAdapter = KisilerAdapter(requireContext(), it, viewModel)
+            binding.kisilerRv.adapter = kisilerAdapter
+        }
 
-        val kisilerAdapter = KisilerAdapter(requireContext(), kisilerListesi)
-        binding.kisilerRv.adapter = kisilerAdapter
 
         binding.kisilerRv.layoutManager = LinearLayoutManager(requireContext())
 
@@ -46,17 +47,17 @@ class AnasayfaFragment : Fragment() {
 
         binding.fab.setOnClickListener {
             Log.e("test", "çalıştı")
-            Navigation.findNavController(it).navigate(R.id.kisiKayitGecis)
+            Navigation.gecis(it,R.id.kisiKayitGecis)
         }
 
         binding.searchView.setOnQueryTextListener(object : OnQueryTextListener {
             override fun onQueryTextChange(newText: String): Boolean {//harf girdikçe ve sildikçe
-                ara(newText)
+                viewModel.ara(newText)
                 return true
             }
 
             override fun onQueryTextSubmit(query: String): Boolean {//klavyedeki
-                ara(query)
+                viewModel.ara(query)
                 return true
             }
         })
@@ -64,8 +65,14 @@ class AnasayfaFragment : Fragment() {
         return binding.root
     }
 
-    fun ara(aramaKelimesi: String) {
-        Log.e("Kişi ara", aramaKelimesi)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val tempViewModel: AnasayfaViewModel by viewModels()
+        viewModel = tempViewModel
     }
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.kisileriYukle()
+    }
 }
